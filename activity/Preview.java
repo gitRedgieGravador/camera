@@ -1,115 +1,85 @@
 package com.example.mrclay;
-
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.graphics.drawable.RoundedBitmapDrawable;
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-import static android.app.Activity.RESULT_OK;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 
 public class Preview extends AppCompatActivity {
-    private Button takePictureButton;
     private ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.preview);
-        takePictureButton = (Button) findViewById(R.id.button_image);
         imageView = (ImageView) findViewById(R.id.imageview);
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == 0) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                takePictureButton.setEnabled(true);
-            }
+        System.out.println("bennn here....");
+        //Uri src = getIntent().getData();
+        String myuri = getIntent().getStringExtra("uri");
+        Uri src = Uri.parse(myuri);
+        //Bitmap bm = getImageBitmap(src);
+        imageView.setImageURI(src);
+       System.out.println("rec uri: ---"+ src);
+        try{
+            Bitmap btm = rotateBitmapOrientation(src.getPath());
+            imageView.setImageBitmap(btm);
+        }catch(Exception ex){
+            //imageView.setImageURI(src);
+            System.out.println("Exception: "+ex);
         }
     }
-    private static Uri file;
-    public void takePicture(View view) {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        file = Uri.fromFile(getOutputMediaFile());
-        Intent intent1 = intent.putExtra(MediaStore.EXTRA_OUTPUT, file);
-        startActivityForResult(intent1, 100);
-    }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == 100) {
-            if (resultCode == RESULT_OK) {
-                imageView.setImageURI(file);
-                //imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-            }
-        }
-    }
-    private static File getOutputMediaFile(){
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "DailyFaces");
 
-        if (!mediaStorageDir.exists()){
-            if (!mediaStorageDir.mkdirs()){
-                return null;
-            }
-        }
-
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        return new File(mediaStorageDir.getPath() + File.separator +
-                "IMG_"+ timeStamp + ".jpg");
-    }
     public void PostNow(View view){
-
+        //bitmapToBase64(bitmapImgFile);
     }
-    public void takeFromGallery(View view){
 
+    public Bitmap rotateBitmapOrientation(String photoFilePath) {
+        // Create and configure BitmapFactory
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(photoFilePath, bounds);
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        Bitmap bm = BitmapFactory.decodeFile(photoFilePath, opts);
+        // Read EXIF Data
+        ExifInterface exif = null;
+        System.out.println("filename: "+photoFilePath);
+        try {
+            exif = new ExifInterface(photoFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String orientString = exif.getAttribute(ExifInterface.TAG_ORIENTATION);
+        int orientation = orientString != null ? Integer.parseInt(orientString) : ExifInterface.ORIENTATION_NORMAL;
+        int rotationAngle = 0;
+        if (orientation == ExifInterface.ORIENTATION_ROTATE_90) rotationAngle = 90;
+        if (orientation == ExifInterface.ORIENTATION_ROTATE_180) rotationAngle = 180;
+        if (orientation == ExifInterface.ORIENTATION_ROTATE_270) rotationAngle = 270;
+        // Rotate Bitmap
+        Matrix matrix = new Matrix();
+        matrix.setRotate(rotationAngle, (float) bm.getWidth()/2 , (float) bm.getHeight()/2 );
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bm, 0, 0, bounds.outWidth, bounds.outHeight, matrix, true);
+        // Return result
+        return rotatedBitmap;
     }
-//    @Override
-//    protected void onActivityResult(int reqCode, int resultCode, Intent data) {
-//        super.onActivityResult(reqCode, resultCode, data);
-//
-//
-//        if (resultCode == RESULT_OK) {
-//            try {
-//                final Uri imageUri = data.getData();
-//                final Bitmap selectedImage;
-//                try (InputStream imageStream = getContentResolver().openInputStream(imageUri)) {
-//                    selectedImage = BitmapFactory.decodeStream(imageStream);
-//                }
-//                RoundedBitmapDrawable circularBitmapDrawable = RoundedBitmapDrawableFactory.create(getResources(), selectedImage);
-//
-//                circularBitmapDrawable.setCircular(true);
-//                imageView.setImageDrawable(circularBitmapDrawable);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                //Toast.makeText(MainActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
-//            }
-//
-//        }else {
-//            //Toast.makeText(MainActivity.this, "You haven't picked Image",Toast.LENGTH_LONG).show();
-//        }
-//    }
+
+
+    private String bitmapToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream .toByteArray();
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
 }

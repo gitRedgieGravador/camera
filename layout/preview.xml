@@ -12,20 +12,12 @@
 
     <ImageView
         android:id="@+id/imageview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="322dp"
+        android:layout_height="428dp"
         android:layout_above="@+id/button_image"
-        android:layout_centerHorizontal="true" />
+        android:layout_marginBottom="42dp"
+        android:src="@drawable/ic_image_black_24dp" />
 
-    <Button
-        android:id="@+id/button_image"
-        android:layout_width="150dp"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="60dp"
-        android:layout_marginLeft="1dp"
-        android:onClick="takePicture"
-        android:text="Take a picture" />
     <Button
         android:id="@+id/btnPost"
         android:layout_width="600dp"
@@ -35,14 +27,5 @@
         android:layout_marginLeft="1dp"
         android:onClick="PostNow"
         android:text="Post" />
-    <Button
-        android:id="@+id/btnStorage"
-        android:layout_width="250dp"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="60dp"
-        android:layout_marginLeft="150dp"
-        android:onClick="takeFromGallery"
-        android:text="Gallery" />
 
 </RelativeLayout>
